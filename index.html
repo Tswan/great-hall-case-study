@@ -1,0 +1,227 @@
+<!doctype html>
+<!--
+  Great Hall: Immersive Environment case study (Travis Swan)
+  Created using Anthropic Claude. Keep this note on internal versions until a human has reviewed and verified the content.
+-->
+<html lang="en" data-mode="night" data-chapter="hero">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Great Hall: Immersive Environment for Max on Apple Vision Pro · Travis Swan</title>
+  <meta name="description" content="Case study: building Hogwarts' Great Hall as an immersive environment for the HBO Max app on Apple Vision Pro." />
+  <link rel="stylesheet" href="css/style.css?v=202610101630" />
+</head>
+<body>
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div id="veil" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <div id="loader" role="status" aria-live="polite">
+    <div class="loader-inner">
+      <p class="eyebrow">Lighting the candles</p>
+      <div class="bar"><i></i></div>
+      <p class="pct">0%</p>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="#top"><span>Travis Swan</span><small>Case study</small></a>
+    <div class="mode" role="group" aria-label="Lighting mode">
+      <button data-mode-btn="night" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>Night</button>
+      <button data-mode-btn="day" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>Day</button>
+    </div>
+  </header>
+
+  <nav class="rail" aria-label="Chapters">
+    <a href="#top"><span>Intro</span></a>
+    <a href="#brief"><span>The brief</span></a>
+    <a href="#setup"><span>Project setup</span></a>
+    <a href="#tables"><span>Tables &amp; UVs</span></a>
+    <a href="#ceiling"><span>Enchanted ceiling</span></a>
+    <a href="#rafters"><span>Transparent rafters</span></a>
+    <a href="#fire"><span>Fire</span></a>
+    <a href="#candles"><span>Floating candles</span></a>
+    <a href="#lighting"><span>Day &amp; night</span></a>
+    <a href="#headset"><span>In the headset</span></a>
+    <a href="#credits"><span>Credits</span></a>
+  </nav>
+
+  <main>
+    <!-- 0 · HERO -->
+    <section id="top" data-shot="hero" class="chapter hero">
+      <div class="hero-inner">
+        <p class="eyebrow">Case study · HBO Max on Apple Vision Pro</p>
+        <h1>The Great Hall</h1>
+        <p class="lede">Turning video-game assets into a fully immersive environment you can sit inside, with floating candles, a living night sky, and a fire that never goes out.</p>
+        <dl class="meta">
+          <div><dt>Platform</dt><dd>Apple Vision Pro · visionOS</dd></div>
+          <div><dt>Tools</dt><dd>Blender · Reality Composer Pro · RealityKit</dd></div>
+          <div><dt>Team</dt><dd>Travis Swan, Mark Brouwer, Luke Lavictoire &amp; the Max visionOS team</dd></div>
+          <div><dt>My focus</dt><dd>Project setup, mesh clean-up &amp; UVs, Enchanted Ceiling, transparent rafters</dd></div>
+        </dl>
+        <p class="scroll-cue"><span></span>Scroll to step inside</p>
+      </div>
+    </section>
+
+    <!-- 1 · BRIEF -->
+    <section id="brief" data-shot="brief" class="chapter">
+      <article class="card left">
+        <p class="eyebrow">01 · The brief</p>
+        <h2>An environment, not a backdrop</h2>
+        <p>On Vision Pro, Max offers <strong>immersive environments</strong>: full 360° spaces that wrap around you while you browse and watch. After the House of the Dragon Throne Room, the next destination was Hogwarts, and there was only one room it could be.</p>
+        <p>The goal: a Great Hall that feels alive at true scale, runs comfortably on-device, and works in two moods: a candle-lit <em>night</em> and a bright <em>day</em>.</p>
+        <div class="stats">
+          <div class="stat"><b data-count="424938">0</b><span>triangles in the night scene</span></div>
+          <div class="stat"><b data-count="284">0</b><span>named objects across day &amp; night</span></div>
+          <div class="stat"><b data-count="2">0</b><span>baked lighting states</span></div>
+        </div>
+      </article>
+    </section>
+
+    <!-- 2 · SETUP (Travis) -->
+    <section id="setup" data-shot="setup" class="chapter">
+      <article class="card right">
+        <p class="eyebrow">02 · Project setup · <span class="who">Travis</span></p>
+        <h2>From game assets to a clean scene</h2>
+        <p>Our starting point was video-game assets from <strong>Avalanche Software</strong>, the team behind <em>Hogwarts Legacy</em>. Game assets are built for a game engine, with shared trim sheets, LODs and real-time lighting. Vision Pro needed something leaner: a self-contained scene with lighting baked into every surface.</p>
+        <p>I set up the project: importing the source assets into Blender, establishing scale and orientation for Reality Composer Pro, and <strong>naming and organising every object</strong> so a three-person team could texture, bake and light in parallel without stepping on each other.</p>
+        <ul class="ticks">
+          <li>Consistent <code>SM_HW_GH_*</code> naming by asset family</li>
+          <li><code>_Baked</code> suffix marking every bake target, one texture per object</li>
+          <li><code>VFX_*</code> prefix for special-case materials like the rafters</li>
+        </ul>
+      </article>
+      <aside class="outliner left" aria-label="Scene outliner (real object names)">
+        <header><span>Outliner</span><small>greathall_bake · 284 objects</small></header>
+        <ul id="outliner-list"></ul>
+      </aside>
+      <figure class="media-row">
+        <img src="assets/media/rcp-setup.webp" alt="The Great Hall scene open in the Vision Pro simulator alongside Reality Composer Pro" loading="lazy" />
+        <figcaption>Early import running in the visionOS simulator.</figcaption>
+      </figure>
+    </section>
+
+    <!-- 3 · TABLES / UV (Travis) -->
+    <section id="tables" data-shot="tables" class="chapter">
+      <article class="card right">
+        <p class="eyebrow">03 · Mesh clean-up &amp; UVs · <span class="who">Travis</span></p>
+        <h2>Tables, UVs &amp; seam sewing</h2>
+        <p>The four long house tables and their benches are the heart of the room, and they're seen up close. I cleaned up their geometry, then <strong>re-unwrapped the UVs</strong> so each table could receive its own high-resolution bake. The tables carry a dedicated <code>fixUvMap</code> UV set that the bake reads from.</p>
+        <p>Baking lighting exposes every UV seam: a split island means a visible line in the shadow. I <strong>sewed seams</strong> back together wherever the eye travels, so the baked light flows across the tabletops and runners without breaks.</p>
+        <p class="hint">The checker you see on the tables right now is a live UV visualisation on the real meshes; cyan marks the seams. In the shipped environment the house tables appear in day mode, so the hall switches to day for this chapter.</p>
+        <button id="uv-toggle" class="btn" aria-pressed="true">Hide UV checker</button>
+      </article>
+    </section>
+
+    <!-- 4 · CEILING (Travis) -->
+    <section id="ceiling" data-shot="ceiling" class="chapter">
+      <article class="card left">
+        <p class="eyebrow">04 · Enchanted Ceiling · <span class="who">Travis</span></p>
+        <h2>A sky that moves</h2>
+        <p>The ceiling is the signature of the room, so it couldn't be a static picture. I built it as an <strong>animated shader</strong> in Reality Composer Pro that composites several layers over a deep sky gradient: a star field, drifting cloud sheets moving at different speeds, and <strong>procedurally generated noise clouds</strong>.</p>
+        <p>The same graph drives both moods: night blends stars and cool moonlit clouds, day swaps to daylight cloud layers. A soft pill-shaped opacity mask feathers the sky into the stonework so the edges never read as a flat plane.</p>
+        <button class="btn ghost" data-mode-toggle>Toggle day / night</button>
+      </article>
+      <div class="media-row two">
+        <figure><video data-auto muted loop playsinline preload="none" poster="assets/media/ceiling-layers.webp" src="assets/media/ceiling-anim.mp4"></video><figcaption>Animated cloud and star layers.</figcaption></figure>
+        <figure><img src="assets/media/ceiling-rcp.webp" alt="Cloud layer selected in Reality Composer Pro" loading="lazy" /><figcaption>One cloud layer in Reality Composer Pro.</figcaption></figure>
+      </div>
+    </section>
+
+    <!-- 5 · RAFTERS (Travis) -->
+    <section id="rafters" data-shot="rafters" class="chapter">
+      <article class="card right">
+        <p class="eyebrow">05 · Transparent rafters · <span class="who">Travis</span></p>
+        <h2>Rafters that dissolve into the sky</h2>
+        <p>The Great Hall has heavy timber rafters, but the Enchanted Ceiling needed to read as open sky. Making them transparent on Vision Pro required more attention because blended surfaces stacked in front of each other, creating a less than ideal result.</p>
+        <p>My approach: render the rafters with an <strong>unlit material</strong> whose opacity comes from <strong>world-space height</strong>. The shader reads the object's position, takes its Y value and remaps it: fully solid at 15&nbsp;m, gone by 30&nbsp;m. Because the fade is driven by height, not by a texture, it stays seamless across every rafter.</p>
+        <p>The final step: the rafters sit in their own <strong>"mesh sorting group" with a depth pre-pass</strong>. Depth is written first, so only the nearest rafter surface gets shaded at each pixel. The fade then behaves as if the rafters were a flat rendered image: overlapping faces don't stack up into extra opacity, and the timber dissolves evenly as it rises.</p>
+        <div class="graph" aria-hidden="true">
+          <span>Position <small>world</small></span><i></i><span>Separate <small>Y</small></span><i></i><span>Remap <small id="graph-range">15→30 m · 1→0</small></span><i></i><span>Opacity</span>
+        </div>
+        <div class="sliders">
+          <label>Fade starts <input id="fade-low" type="range" min="8" max="28" value="15" /> <output id="fade-low-out">15 m</output></label>
+          <label>Fully clear <input id="fade-high" type="range" min="10" max="40" value="30" /> <output id="fade-high-out">30 m</output></label>
+          <button id="fade-reset" class="btn ghost small">Reset</button>
+        </div>
+      </article>
+    </section>
+
+    <!-- 6 · FIRE (Mark) -->
+    <section id="fire" data-shot="fire" class="chapter">
+      <article class="card right">
+        <p class="eyebrow">06 · Fire · <span class="who mark">Mark</span></p>
+        <h2>A fire that never goes out</h2>
+        <p>Mark Brouwer did a lot of the texturing and created the flames. Real fire footage was converted into <strong>flipbook sprite sheets</strong> (an 8-second clip becomes a grid of frames on one texture), and a custom shader steps through the frames every tick.</p>
+        <p>It's an efficient way to put high-quality looping motion into the environment: the great fireplace and the house torches are just flat cards with an animated texture, plus flickering dynamic lights.</p>
+      </article>
+      <div class="media-row two">
+        <figure><video data-auto muted loop playsinline preload="none" src="assets/media/fire-source.mp4"></video><figcaption>Source flame clip.</figcaption></figure>
+        <figure><img src="assets/media/fire-spritesheet.webp" alt="Flame sprite sheet grid" loading="lazy" /><figcaption>The same clip as a sprite sheet.</figcaption></figure>
+      </div>
+    </section>
+
+    <!-- 7 · CANDLES (Mark) -->
+    <section id="candles" data-shot="candles" class="chapter">
+      <article class="card left">
+        <p class="eyebrow">07 · Floating candles · <span class="who mark">Mark</span></p>
+        <h2>Hundreds of candles, none of them still</h2>
+        <p>Mark also built the floating candles. Their placement was scattered in Blender; their motion lives in Reality Composer Pro, where a <strong>dynamically generated noise field</strong> offsets each candle's position so the whole cloud bobs gently and never moves in lockstep.</p>
+      </article>
+      <div class="media-row two">
+        <figure><video data-auto muted loop playsinline preload="none" src="assets/media/candles-bob.mp4"></video><figcaption>Candles bobbing in the hall.</figcaption></figure>
+        <figure><video data-auto muted loop playsinline preload="none" src="assets/media/candles-noise.mp4"></video><figcaption>The noise map driving the offset.</figcaption></figure>
+      </div>
+    </section>
+
+    <!-- 8 · LIGHTING (Luke) -->
+    <section id="lighting" data-shot="lighting" class="chapter">
+      <article class="card right">
+        <p class="eyebrow">08 · Lighting &amp; final renders · <span class="who luke">Luke</span></p>
+        <h2>Two moods, baked in</h2>
+        <p>Luke Lavictoire lit the hall and produced the final renders for both modes. Lighting was built in Blender and <strong>baked into the textures</strong>. Every surface you're looking at carries its light with it, which is how a scene this rich stays fast on-device.</p>
+        <p>Night is warm firelight and candle glow under a starry sky; day is cool window light and soft clouds. Each mode is its own full set of baked textures on the same geometry.</p>
+        <button class="btn" data-mode-toggle>Switch the hall to <span class="when-night">day</span><span class="when-day">night</span></button>
+      </article>
+      <figure class="wipe media-row" style="--x:50%">
+        <img src="assets/media/pano-night.webp" alt="360° night render of the Great Hall" loading="lazy" />
+        <img class="top" src="assets/media/pano-day.webp" alt="360° day render of the Great Hall" loading="lazy" />
+        <span class="handle" aria-hidden="true"></span>
+        <label class="sr">Compare day and night <input type="range" min="0" max="100" value="50" /></label>
+        <figcaption>Final 360° renders. Drag to compare day and night.</figcaption>
+      </figure>
+    </section>
+
+    <!-- 9 · HEADSET -->
+    <section id="headset" data-shot="headset" class="chapter">
+      <article class="card left">
+        <p class="eyebrow">09 · In the headset</p>
+        <h2>Watch anything from the Great Hall</h2>
+        <p>In the app, the hall wraps around you and the video player docks in the middle of the room, so you can watch in the Great Hall itself. The team also shipped <strong>Browse &amp; Watch modes</strong> and an <strong>environment downloader</strong> that delivers large environments as remote assets instead of bundling them with the app.</p>
+      </article>
+      <div class="media-row two">
+        <figure><video data-auto muted loop playsinline preload="none" poster="assets/media/hall-still.webp" src="assets/media/hall-flythrough.mp4"></video><figcaption>Captured on device.</figcaption></figure>
+        <figure><img src="assets/media/env-picker.webp" alt="Immersive environment picker in the Max app on visionOS" loading="lazy" /><figcaption>Choosing an environment in Max.</figcaption></figure>
+      </div>
+    </section>
+
+    <!-- 10 · CREDITS -->
+    <section id="credits" data-shot="credits" class="chapter credits">
+      <article class="card center">
+        <p class="eyebrow">Credits</p>
+        <h2>Who did what</h2>
+        <div class="people">
+          <div><h3>Travis Swan</h3><p>Project setup, naming &amp; organisation · table clean-up, UV mapping &amp; seam sewing · Enchanted Ceiling (day &amp; night) · transparent rafters</p></div>
+          <div><h3>Mark Brouwer</h3><p>Texturing · fireplace &amp; torch flames · floating candles</p></div>
+          <div><h3>Luke Lavictoire</h3><p>Lighting · final day &amp; night renders</p></div>
+        </div>
+        <p class="small">With the Max on Vision Pro team: Adam Bader, Joseph Megkousoglou, Raffaele La Brocca and Gabriel Banfalvi. Source assets: Avalanche Software.</p>
+        <p class="small muted">The 3D hall on this page is the production bake, converted from the Reality Composer Pro project for the web. Fire, candles and sky are recreated in WebGL. Harry Potter characters, names and related indicia are © &amp; ™ Warner Bros. Entertainment Inc.</p>
+        <a class="btn ghost" href="#top">Back to the entrance</a>
+      </article>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js?v=202610101630"></script>
+</body>
+</html>

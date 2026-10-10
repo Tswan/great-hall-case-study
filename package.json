@@ -1,0 +1,14 @@
+{
+  "name": "great-hall-case-study",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild js/main.js --bundle --minify --format=esm --target=es2020 --outfile=js/app.js",
+    "dev": "esbuild js/main.js --bundle --format=esm --outfile=js/app.js --watch --servedir=. --serve=8080",
+    "serve": "python3 -m http.server 8080"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "three": "^0.186.1"
+  }
+}
