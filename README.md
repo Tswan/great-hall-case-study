@@ -46,8 +46,12 @@ index.html            page + all copy
 css/style.css         styling
 js/main.js            source (three.js scene, scroll choreography, effects)
 js/app.js             built bundle (what index.html loads)
-assets/model/night.glb       night composition (Scene_Night), meshopt + WebP, ~10 MB — loads first
-assets/model/day.glb         day composition (Scene_Day), ~22 MB — loads in the background, used by the Day toggle
+assets/model/night.glb       night composition (Scene_Night), meshopt + WebP: the source for the KTX2 files below (not loaded by the page)
+assets/model/day.glb         day composition (Scene_Day), meshopt + WebP: source, not loaded
+assets/model/night.ktx2.glb  night with KTX2 textures: loads first on desktop
+assets/model/day.ktx2.glb    day with KTX2 textures: loads in the background on desktop, used by the Day toggle
+assets/model/*.mobile.ktx2.glb  half-resolution versions for phones/tablets; only one lighting scene is kept in memory at a time
+assets/basis/         Basis transcoder for KTX2Loader (copied from three/examples/jsm/libs/basis; re-copy when upgrading three)
 assets/model/ceiling.glb     Enchanted Ceiling dome (stars + cloud shells), ~50 KB
 assets/model/table-seams.bin UV seam edges for the house tables (computed from the meshes)
 assets/textures/      sky, fire sprite sheets, candle
@@ -75,10 +79,12 @@ Per-object texture choices are listed in `tools/night-mesh-texture-map.tsv` and 
 
 To rebuild: `node tools/usd-to-glb.mjs night out.glb` / `day`, then `node tools/optimize-glb.mjs out.glb assets/model/night.glb` (needs `three`, `@gltf-transform/*`, `sharp`, `meshoptimizer`).
 
+Then `npm run textures` (about 5–10 minutes) re-encodes the hall textures as KTX2 (Basis ETC1S) with `tools/compress-textures.mjs`, writing the four `*.ktx2.glb` files the page loads. The WebP textures take ~2 GB of GPU memory per scene once decoded, which crashes iOS Safari; KTX2 stays compressed on the GPU (~0.3 GB desktop, ~0.1 GB mobile). Pass `--quality` (1–255, default 230) if walls show banding or the download is too big.
+
 ## Please review before publishing
 
 - **Facts and attributions.** Copy was written from your brief, the two town hall decks and the project files. Check especially: the rafter write-up (sorting/mesh-sorting-group wording), "8-second clip" for the fire, the Avalanche/Hogwarts Legacy description, and the extended team names/roles.
 - **House tables.** In the project the house tables are active in the **day** scene and switched off in the **night** scene. The page follows that, and the Tables & UVs chapter temporarily switches the hall to day so they're visible.
 - **Missing textures.** A handful of objects reference textures that aren't in the project (e.g. `SM_HW_GH_WallPanelingBalcony_B_4`, some timber fills, upper window panes); see the `(guessed)` / `NONE` rows in the tool maps.
 - **Recreated effects.** Sky, fire, candles and torch glow are WebGL recreations that use the production textures/sprite sheets. They're close, not identical, to RCP.
-- **Approvals.** This is a public portfolio piece using Harry Potter IP, Avalanche Software source assets and colleagues' names — get IP Legal sign-off and let Mark and Luke review how they're credited before it goes live. Share only with people authorised to see the source material until then.
+- **Approvals.** This is a public portfolio piece using Harry Potter IP, Avalanche Software source assets and colleagues' names. IP usage requires sign-off, and let Mark and Luke review how they're credited before it goes live. Share only with people authorised to see the source material until then.

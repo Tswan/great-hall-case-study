@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import outlinerNames from '../assets/outliner.json';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -12,17 +13,21 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const smooth = (t) => t * t * (3 - 2 * t);
 const lerp = (a, b, t) => a + (b - a) * t;
-const BUILD = '202610101630'; // bump on every rebuild so browsers never show a stale model
+const BUILD = '202610121200'; // bump on every rebuild so browsers never show a stale model
 const asset = (p) => (window.__ASSETS && window.__ASSETS[p]) || `${p}?v=${BUILD}`; // lets a single-file preview inline its assets
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Phones/tablets: iOS Safari kills the tab at ~1–2 GB, so they get half-res textures and only one lighting scene in memory at a time.
+const lowMemory = matchMedia('(pointer: coarse)').matches;
 
 // ---------------------------------------------------------------- renderer
 const canvas = $('#gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.setPixelRatio(Math.min(devicePixelRatio, lowMemory ? 1.5 : 1.75));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping; // lighting is baked into the textures
+// On iOS the usual sign of running out of memory is a lost context (or the whole tab reloading), so make it visible in Web Inspector.
+canvas.addEventListener('webglcontextlost', (e) => console.error('WebGL context lost', e));
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x020306);
@@ -124,8 +129,11 @@ const tex = (url, srgb = true, repeat = false) => {
   return t;
 };
 
+// Hall textures are KTX2 (Basis ETC1S, see tools/compress-textures.mjs): they stay block-compressed on the GPU.
+const ktx2Loader = new KTX2Loader().setTranscoderPath('assets/basis/').detectSupport(renderer);
 const gltfLoader = new GLTFLoader();
 gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+gltfLoader.setKTX2Loader(ktx2Loader);
 
 // Two scenes, exactly as composed in Reality Composer Pro (Scene_Night / Scene_Day).
 // Each is its own GLB because the day and night compositions differ (e.g. the house tables only appear in day).
@@ -188,9 +196,30 @@ function loadScene(which, onProgress) {
     if (inline) {
       const bin = Uint8Array.from(atob(inline), (c) => c.charCodeAt(0)).buffer;
       gltfLoader.parse(bin, '', done, reject);
-    } else gltfLoader.load(asset(`assets/model/${which}.glb`), done, onProgress, reject);
+    } else gltfLoader.load(asset(`assets/model/${which}${lowMemory ? '.mobile' : ''}.ktx2.glb`), done, onProgress, reject);
   });
   return hall.loading[which];
+}
+
+// Frees a lighting scene's GPU memory (mobile only, so day and night are never resident together); loadScene() reloads it on demand.
+function unloadScene(which) {
+  const root = hall[which];
+  if (!root) return;
+  const owned = (o) => { for (let p = o; p; p = p.parent) if (p === root) return true; return false; };
+  hall.rafters = hall.rafters.filter((o) => !owned(o));
+  hall.rafterPrepass = hall.rafterPrepass.filter((o) => !owned(o));
+  hall.focusMeshes = hall.focusMeshes.filter((o) => !owned(o));
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    o.geometry.dispose();
+    for (const m of [].concat(o.material)) {
+      for (const v of Object.values(m)) if (v && v.isTexture) v.dispose();
+      m.dispose();
+    }
+  });
+  scene.remove(root);
+  hall[which] = null;
+  delete hall.loading[which];
 }
 
 let mode = 'night';
@@ -200,8 +229,8 @@ loadScene('night', (e) => { if (e.total) setProgress(0.85 * (e.loaded / e.total)
     root.visible = true;
     setProgress(0.9);
     finishLoading();
-    // Warm the day scene in the background so the toggle is instant.
-    setTimeout(() => loadScene('day').catch((e) => console.warn('day scene', e)), 1200);
+    // Warm the day scene in the background so the toggle is instant (not on mobile: both scenes together don't fit).
+    if (!lowMemory) setTimeout(() => loadScene('day').catch((e) => console.warn('day scene', e)), 1200);
   })
   .catch((err) => { console.error(err); pctEl.textContent = 'Could not load the 3D model. See the README (serve the folder over http).'; setTimeout(finishLoading, 2500); });
 
@@ -221,6 +250,7 @@ async function setMode(next, { auto = false } = {}) {
     if (hall.night) hall.night.visible = next === 'night';
     if (hall.day) hall.day.visible = next === 'day';
     target.visible = true;
+    if (lowMemory) unloadScene(mode);
     mode = next;
     // RCP fade starts at 15 m at night and 18 m in day (Remap inlow override in Scene_Day); both end at 30 m
     if (fadeLow) { fadeLow.value = FADE_LOW[next]; fadeHigh.value = 30; syncFade(); }

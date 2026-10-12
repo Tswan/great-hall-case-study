@@ -5,10 +5,17 @@
   "scripts": {
     "build": "esbuild js/main.js --bundle --minify --format=esm --target=es2020 --outfile=js/app.js",
     "dev": "esbuild js/main.js --bundle --format=esm --outfile=js/app.js --watch --servedir=. --serve=8080",
-    "serve": "python3 -m http.server 8080"
+    "serve": "python3 -m http.server 8080",
+    "textures": "node tools/compress-textures.mjs assets/model/night.glb assets/model/night.ktx2.glb & node tools/compress-textures.mjs assets/model/day.glb assets/model/day.ktx2.glb & node tools/compress-textures.mjs assets/model/night.glb assets/model/night.mobile.ktx2.glb --scale 0.5 & node tools/compress-textures.mjs assets/model/day.glb assets/model/day.mobile.ktx2.glb --scale 0.5 & wait"
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
     "esbuild": "^0.28.2",
+    "ktx2-encoder": "^0.6.0",
+    "meshoptimizer": "^1.3.0",
+    "sharp": "^0.35.5",
     "three": "^0.186.1"
   }
 }
