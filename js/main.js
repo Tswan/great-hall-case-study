@@ -515,7 +515,16 @@ const dustGeo = new THREE.BufferGeometry();
 const dp = new Float32Array(DUST * 3);
 for (let i = 0; i < DUST; i++) { dp[i * 3] = (rnd() * 2 - 1) * 15; dp[i * 3 + 1] = rnd() * 16; dp[i * 3 + 2] = lerp(-38, 26, rnd()); }
 dustGeo.setAttribute('position', new THREE.BufferAttribute(dp, 3));
-const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ size: 0.04, color: 0xffd9a8, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending }));
+// Points render as squares unless they have a sprite: a soft white disc, tinted by the material colour.
+function dotTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.5, 'rgba(255,255,255,0.85)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+// opacity 0.6 (was 0.35 as squares): a soft disc covers about half the pixels of a square
+const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ size: 0.04, map: dotTexture(), color: 0xffd9a8, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending }));
 scene.add(dust);
 
 function mulberry(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
